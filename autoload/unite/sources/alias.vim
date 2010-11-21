@@ -13,26 +13,38 @@ endfunction
 
 function! s:make_aliases()
   let l:aliases = []
-  for [key, params] in items(g:unite_source_alias_aliases)
-    let l:args = (type(params.args) == type([])) ? params.args : [params.args]
-    let l:alias = {
-          \   'name': key,
-          \   'source__source': params.source,
-          \   'source__args': l:args,
+  for [l:key, l:config] in items(g:unite_source_alias_aliases)
+    let l:args = (type(l:config.args) == type([])) ? l:config.args : [l:config.args]
+    let l:original_source = s:get_source(l:config.source)
+    if empty(l:original_source)
+      continue
+    endif
+
+    let l:alias = deepcopy(l:original_source)
+    let l:alias.name = l:key
+    let l:alias.source__alias__ = {
+          \   'args': l:args,
+          \   'gather_candidates': l:alias.gather_candidates,
+          \   'on_init': has_key(l:alias, 'on_init') ? l:alias.on_init : s:null.func,
+          \   'on_close': has_key(l:alias, 'on_close') ? l:alias.on_init : s:null.func,
           \ }
 
     function! l:alias.gather_candidates(args, context)
-      let l:source = s:get_source(self.source__source)
-      if empty(l:source)
-        return []
-      endif
-      let l:originals = l:source.gather_candidates(self.source__args, a:context)
+      let l:originals = self.source__alias__.gather_candidates(self.source__alias__.args, a:context)
       let l:candidates = []
       for l:candidate in l:originals
         let l:candidate.source = self.name
         call add(l:candidates, l:candidate)
       endfor
       return l:candidates
+    endfunction
+    
+    function! l:alias.on_init(args, context)
+      call self.source__alias__.on_init(self.source__alias__.args, a:context)
+    endfunction
+
+    function! l:alias.on_close(args, context)
+      call self.source__alias__.on_close(self.source__alias__.args, a:context)
     endfunction
 
     call add(l:aliases, l:alias)
@@ -71,6 +83,11 @@ function! s:load_default_sources()
       endif
     endif
   endfor
+endfunction
+
+let s:null = {}
+function! s:null.func(args, context)
+  " do nothing
 endfunction
 
 let &cpo = s:save_cpo
