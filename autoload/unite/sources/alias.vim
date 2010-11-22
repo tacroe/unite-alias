@@ -25,8 +25,7 @@ function! s:make_aliases()
     let l:alias.source__alias__ = {
           \   'args': l:args,
           \   'gather_candidates': l:alias.gather_candidates,
-          \   'on_init': has_key(l:alias, 'on_init') ? l:alias.on_init : s:null.func,
-          \   'on_close': has_key(l:alias, 'on_close') ? l:alias.on_init : s:null.func,
+          \   'hooks': {},
           \ }
 
     function! l:alias.gather_candidates(args, context)
@@ -38,14 +37,20 @@ function! s:make_aliases()
       endfor
       return l:candidates
     endfunction
-    
-    function! l:alias.on_init(args, context)
-      call self.source__alias__.on_init(self.source__alias__.args, a:context)
-    endfunction
 
-    function! l:alias.on_close(args, context)
-      call self.source__alias__.on_close(self.source__alias__.args, a:context)
-    endfunction
+    if has_key(l:alias, 'hooks')
+      let l:hook_keys = copy(keys(l:alias.hooks))
+      let l:alias.hooks.__args__ = l:args
+      let l:alias.hooks.__originals__ = {}
+      for l:hook_key in l:hook_keys
+        let l:alias.hooks.__originals__[l:hook_key] = l:alias.hooks[l:hook_key]
+        let l:define_function = join([ 
+              \ 'function! l:alias.hooks.' . l:hook_key . '(args, context)',
+              \ '  return self.__originals__.' . l:hook_key . '(self.__args__, a:context)',
+              \ 'endfunction'], "\n")
+        execute l:define_function
+      endfor
+    endif
 
     call add(l:aliases, l:alias)
   endfor
@@ -83,11 +88,6 @@ function! s:load_default_sources()
       endif
     endif
   endfor
-endfunction
-
-let s:null = {}
-function! s:null.func(args, context)
-  " do nothing
 endfunction
 
 let &cpo = s:save_cpo
