@@ -13,15 +13,27 @@ endfunction
 
 function! s:make_aliases()
   let l:aliases = []
-  for [l:key, l:config] in items(g:unite_source_alias_aliases)
-    let l:args = (type(l:config.args) == type([])) ? l:config.args : [l:config.args]
-    let l:original_source = s:get_source(l:config.source)
+  for [l:name, l:config] in items(g:unite_source_alias_aliases)
+    let l:original_source = 
+          \ (!has_key(l:config, 'source')) ? {} :
+          \ s:get_source(l:config.source)
+
     if empty(l:original_source)
       continue
     endif
 
+    let l:args = 
+          \ (!has_key(l:config, 'args')) ? [] :
+          \ (type(l:config.args) == type([])) ? l:config.args :
+          \ [l:config.args]
+    
+    let l:description =
+          \ (!has_key(l:config, 'description')) ? '' :
+          \ l:config.description
+    
     let l:alias = deepcopy(l:original_source)
-    let l:alias.name = l:key
+    let l:alias.name = l:name
+    let l:alias.description = l:description
     let l:alias.source__alias__ = {
           \   'args': l:args,
           \   'gather_candidates': l:alias.gather_candidates,
@@ -51,7 +63,7 @@ function! s:make_aliases()
         execute l:define_function
       endfor
     endif
-
+    
     call add(l:aliases, l:alias)
   endfor
   return l:aliases
