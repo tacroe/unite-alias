@@ -41,7 +41,8 @@ function! s:make_aliases()
           \ }
 
     function! l:alias.gather_candidates(args, context)
-      let l:originals = self.source__alias__.gather_candidates(self.source__alias__.args, a:context)
+      let l:args = self.source__alias__.args + a:args
+      let l:originals = self.source__alias__.gather_candidates(l:args, a:context)
       let l:candidates = []
       for l:candidate in l:originals
         let l:candidate.source = self.name
@@ -58,7 +59,8 @@ function! s:make_aliases()
         let l:alias.hooks.__originals__[l:hook_key] = l:alias.hooks[l:hook_key]
         let l:define_function = join([ 
               \ 'function! l:alias.hooks.' . l:hook_key . '(args, context)',
-              \ '  return self.__originals__.' . l:hook_key . '(self.__args__, a:context)',
+              \ '  let l:args = self.__args__ + a:args',
+              \ '  return self.__originals__.' . l:hook_key . '(l:args, a:context)',
               \ 'endfunction'], "\n")
         execute l:define_function
       endfor
