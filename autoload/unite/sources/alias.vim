@@ -28,7 +28,7 @@ function! s:make_aliases()
           \ [l:config.args]
     
     let l:description =
-          \ (!has_key(l:config, 'description')) ? '' :
+          \ (!has_key(l:config, 'description')) ? s:make_default_description(l:config.source, l:args) :
           \ l:config.description
     
     let l:alias = deepcopy(l:original_source)
@@ -102,6 +102,15 @@ function! s:load_default_sources()
       endif
     endif
   endfor
+endfunction
+
+function! s:make_default_description(source_name, args)
+  let l:desc = 'alias for "' . a:source_name
+  if empty(a:args)
+    return l:desc . '"'
+  endif
+  let l:desc .= ':' . join(a:args, ':') . '"'
+  return l:desc
 endfunction
 
 let &cpo = s:save_cpo
